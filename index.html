@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistema Facturador (Demo)</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <!-- Librerías (CDN) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logoBox" id="brandLogoBox">SF</div>
+      <div>
+        <div class="title">Sistema Facturador</div>
+        <div class="subtitle" id="loginStatus">No autenticado</div>
+      </div>
+    </div>
+    <div class="topActions">
+      <button class="btn" id="btnLogout" title="Cerrar sesión">Salir</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <button class="tabBtn active" data-tab="config">0. Configuración</button>
+      <button class="tabBtn" data-tab="proveedores">1. Proveedores</button>
+      <button class="tabBtn" data-tab="compras">2. Compras</button>
+      <button class="tabBtn" data-tab="inventario">3. Inventario</button>
+      <button class="tabBtn" data-tab="clientes">4. Clientes</button>
+      <button class="tabBtn" data-tab="ventas">5. Ventas</button>
+      <button class="tabBtn" data-tab="reportes">6. Reportes</button>
+    </aside>
+
+    <section class="content">
+      <!-- LOGIN -->
+      <section class="card" id="loginCard">
+        <h2>Iniciar sesión</h2>
+        <div class="grid2">
+          <label>
+            Usuario
+            <input class="input" id="loginUser" placeholder="admin" />
+          </label>
+          <label>
+            Contraseña
+            <input class="input" id="loginPass" type="password" placeholder="admin123" />
+          </label>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="btnLogin">Entrar</button>
+          <div class="hint">Demo local. Para seguridad real se requiere backend con autenticación.</div>
+        </div>
+      </section>
+
+      <!-- CONFIG -->
+      <section class="panel card" id="tab-config">
+        <div class="panelHeader">
+          <h2>0. Configuración</h2>
+          <div class="row">
+            <button class="btn" id="btnEditConfig">Editar</button>
+            <button class="btn primary" id="btnSaveConfig" disabled>Guardar</button>
+          </div>
+        </div>
+
+        <h3>Datos del emisor</h3>
+        <div class="grid3">
+          <label>
+            RUC del emisor
+            <input class="input cfg" id="cfgRuc" maxlength="11" placeholder="20123456789" disabled />
+          </label>
+          <label>
+            Razón social del emisor
+            <input class="input cfg" id="cfgRazon" placeholder="MI EMPRESA S.A.C." disabled />
+          </label>
+          <label>
+            Logo (opcional)
+            <input class="input cfg" id="cfgLogo" type="file" accept="image/*" disabled />
+          </label>
+        </div>
+
+        <h3>Series por tipo de comprobante</h3>
+        <div class="grid3">
+          <div class="box">
+            <div class="boxTitle">Factura</div>
+            <label>Serie (Ej: F001) <input class="input cfg" id="cfgSerieFactura" maxlength="4" disabled /></label>
+          </div>
+          <div class="box">
+            <div class="boxTitle">Boleta de venta</div>
+            <label>Serie (Ej: B001) <input class="input cfg" id="cfgSerieBoleta" maxlength="4" disabled /></label>
+          </div>
+          <div class="box">
+            <div class="boxTitle">Nota de pedido</div>
+            <label>Serie (Ej: NP01) <input class="input cfg" id="cfgSerieNota" maxlength="4" disabled /></label>
+          </div>
+        </div>
+
+        <h3>Usuarios</h3>
+        <div class="row">
+          <button class="btn" id="btnNewUser">Crear usuario</button>
+        </div>
+        <div class="tableWrap">
+          <table class="table" id="tblUsers">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Accesos</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="hr"></div>
+        <div class="hint">
+          Al final de cada comprobante se imprimirá: <b>“Gracias por su preferencia”</b>.
+        </div>
+      </section>
+
+      <!-- PROVEEDORES -->
+      <section class="panel card hidden" id="tab-proveedores">
+        <div class="panelHeader">
+          <h2>1. Proveedores</h2>
+          <div class="row">
+            <button class="btn" id="btnAddProveedor">Agregar</button>
+            <button class="btn" id="btnDownloadTplProv">Plantilla Excel</button>
+            <label class="btn fileBtn">
+              Importar Excel
+              <input type="file" id="fileProv" accept=".xlsx,.xls" hidden />
+            </label>
+          </div>
+        </div>
+
+        <div class="tableWrap">
+          <table class="table" id="tblProveedores">
+            <thead>
+              <tr>
+                <th>Tipo de comprobante</th>
+                <th>N° de documento</th>
+                <th>Razón social</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- COMPRAS -->
+      <section class="panel card hidden" id="tab-compras">
+        <div class="panelHeader">
+          <h2>2. Compras</h2>
+          <div class="row">
+            <button class="btn" id="btnAddCompra">Nueva compra</button>
+            <button class="btn" id="btnDownloadTplCompras">Plantilla Excel</button>
+            <label class="btn fileBtn">
+              Importar Excel
+              <input type="file" id="fileCompras" accept=".xlsx,.xls" hidden />
+            </label>
+          </div>
+        </div>
+
+        <div class="tableWrap">
+          <table class="table" id="tblComprasResumen">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th># Ítems</th>
+                <th>Total compra</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="modal hidden" id="modalCompra">
+          <div class="modalContent">
+            <div class="modalHeader">
+              <h3>Registrar compra (bienes)</h3>
+              <button class="btn" id="btnCloseCompra">Cerrar</button>
+            </div>
+
+            <div class="grid2">
+              <label>Fecha <input class="input inputAlt" id="cmpFecha" type="date"/></label>
+              <label>Proveedor (opcional)
+                <select class="input inputAlt" id="cmpProveedor"></select>
+              </label>
+            </div>
+
+            <div class="row">
+              <button class="btn" id="btnAddItemCompra">Agregar ítem</button>
+            </div>
+
+            <div class="tableWrap">
+              <table class="table" id="tblCompraItems">
+                <thead>
+                  <tr>
+                    <th>Cantidad</th>
+                    <th>Producto</th>
+                    <th>Código (opcional)</th>
+                    <th>Precio unitario</th>
+                    <th>Precio total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <div class="row end">
+              <div class="kpi">Total: <b id="cmpTotal">0.00</b></div>
+              <button class="btn primary" id="btnSaveCompra">Guardar compra</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INVENTARIO -->
+      <section class="panel card hidden" id="tab-inventario">
+        <div class="panelHeader">
+          <h2>3. Inventario</h2>
+          <div class="row">
+            <button class="btn" id="btnExportInv">Descargar Excel</button>
+          </div>
+        </div>
+
+        <div class="tableWrap">
+          <table class="table" id="tblInventario">
+            <thead>
+              <tr>
+                <th>Cantidad</th>
+                <th>Producto</th>
+                <th>Código</th>
+                <th>Precio compra</th>
+                <th>Margen utilidad %</th>
+                <th>Precio venta</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="hint">
+          Fórmula: <b>precio_venta = precio_compra × (1 + margen%)</b>. El margen permite hasta 4 decimales.
+        </div>
+      </section>
+
+      <!-- CLIENTES -->
+      <section class="panel card hidden" id="tab-clientes">
+        <div class="panelHeader">
+          <h2>4. Clientes</h2>
+          <div class="row">
+            <button class="btn" id="btnAddCliente">Agregar</button>
+          </div>
+        </div>
+
+        <div class="tableWrap">
+          <table class="table" id="tblClientes">
+            <thead>
+              <tr>
+                <th>Tipo documento</th>
+                <th>N° documento</th>
+                <th>Razón social / Nombre</th>
+                <th>Teléfono / WhatsApp</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="hint">
+          Validación local: RUC (11 dígitos), DNI (8 dígitos). Validación oficial: requiere servicios SUNAT/RENIEC o un proveedor autorizado.
+        </div>
+      </section>
+
+      <!-- VENTAS -->
+      <section class="panel card hidden" id="tab-ventas">
+        <div class="panelHeader">
+          <h2>5. Ventas</h2>
+        </div>
+
+        <div class="grid3">
+          <label>
+            Tipo comprobante
+            <select class="input inputAlt" id="venTipo">
+              <option value="01">Factura (01)</option>
+              <option value="03">Boleta (03)</option>
+              <option value="NP">Nota de pedido</option>
+            </select>
+          </label>
+          <label>
+            Cliente (opcional)
+            <select class="input inputAlt" id="venCliente"></select>
+          </label>
+          <label>
+            Fecha
+            <input class="input inputAlt" id="venFecha" type="date" />
+          </label>
+        </div>
+
+        <h3>Datos del comprador</h3>
+        <div class="grid3">
+          <label>Tipo doc
+            <select class="input inputAlt" id="buyTipo">
+              <option value="RUC">RUC</option>
+              <option value="DNI">DNI</option>
+            </select>
+          </label>
+          <label>N° doc
+            <input class="input inputAlt" id="buyNum" placeholder="RUC 11 / DNI 8" />
+          </label>
+          <label>Razón social / Nombre
+            <input class="input inputAlt" id="buyRazon" placeholder="Se autocompleta si valida" />
+          </label>
+        </div>
+
+        <div class="row">
+          <button class="btn" id="btnValidarDoc">Validar en SUNAT/RENIEC</button>
+          <div class="hint" id="valMsg"></div>
+        </div>
+
+        <h3>Detalle de productos</h3>
+        <div class="row">
+          <button class="btn" id="btnAddVenItem">Agregar producto</button>
+        </div>
+
+        <div class="tableWrap">
+          <table class="table" id="tblVentaItems">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>P. Unit</th>
+                <th>Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="row end">
+          <div class="kpi">Total venta: <b id="venTotal">0.00</b></div>
+          <button class="btn primary" id="btnEmitir">Emitir (PDF + XML)</button>
+        </div>
+
+        <div class="hr"></div>
+        <div class="row">
+          <button class="btn" id="btnEnviarSunat">Enviar XML a SUNAT (beta)</button>
+          <button class="btn" id="btnEnviarWhats">Enviar por WhatsApp (demo)</button>
+        </div>
+        <pre class="mono" id="sunatResp"></pre>
+      </section>
+
+      <!-- REPORTES -->
+      <section class="panel card hidden" id="tab-reportes">
+        <div class="panelHeader">
+          <h2>6. Reportes</h2>
+        </div>
+
+        <div class="grid3">
+          <label>Desde <input class="input" id="repDesde" type="date"/></label>
+          <label>Hasta <input class="input" id="repHasta" type="date"/></label>
+          <button class="btn" id="btnExportVentas">Descargar ventas (Excel)</button>
+        </div>
+
+        <h3>Comprobantes emitidos</h3>
+        <div class="tableWrap">
+          <table class="table" id="tblReportes">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Serie</th>
+                <th>Número</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>PDF</th>
+                <th>XML</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <h3>Top rentabilidad y rotación (aprox.)</h3>
+        <div class="grid2">
+          <div class="box">
+            <div class="boxTitle">Mayor rentabilidad (margen bruto)</div>
+            <ol id="lstRent"></ol>
+          </div>
+          <div class="box">
+            <div class="boxTitle">Mayor rotación (cantidad vendida)</div>
+            <ol id="lstRot"></ol>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- MODAL USUARIO -->
+  <div class="modal hidden" id="modalUser">
+    <div class="modalContent">
+      <div class="modalHeader">
+        <h3>Usuario</h3>
+        <button class="btn" id="btnCloseUser">Cerrar</button>
+      </div>
+      <div class="grid2">
+        <label>Usuario <input class="input" id="usrName" /></label>
+        <label>Contraseña <input class="input" id="usrPass" type="password"/></label>
+      </div>
+      <div class="grid2">
+        <label>Rol
+          <select class="input" id="usrRole">
+            <option value="admin">Administrador</option>
+            <option value="user">Usuario</option>
+          </select>
+        </label>
+        <label>Accesos (para rol usuario)
+          <select class="input" id="usrAccess" multiple size="7">
+            <option value="config">Configuración</option>
+            <option value="proveedores">Proveedores</option>
+            <option value="compras">Compras</option>
+            <option value="inventario">Inventario</option>
+            <option value="clientes">Clientes</option>
+            <option value="ventas">Ventas</option>
+            <option value="reportes">Reportes</option>
+          </select>
+        </label>
+      </div>
+      <div class="row end">
+        <button class="btn primary" id="btnSaveUser">Guardar</button>
+      </div>
+      <div class="hint">En esta demo la contraseña se guarda como texto (no seguro). En producción debe hashearse en backend.</div>
+    </div>
+  </div>
+</body>
+</html>
